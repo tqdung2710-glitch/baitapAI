@@ -1,0 +1,60 @@
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Flatten
+from keras.layers import Conv2D, MaxPooling2D
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import matplotlib.pyplot as plt
+train_dir = "/content/drive/MyDrive/ic"
+img_width, img_height = 280, 280
+batch_size = 32
+train_datagen = ImageDataGenerator(
+        rescale=1./255,
+        rotation_range=30,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True,
+        fill_mode='nearest')
+train_generator = train_datagen.flow_from_directory(
+        train_dir,
+        target_size=(img_width, img_height),
+        batch_size=batch_size,
+        class_mode='categorical')
+model = Sequential()
+model.add(Conv2D(32, (3, 3), activation='relu',padding='same', input_shape=(280, 280, 3)))
+model.add(MaxPooling2D((2, 2)))
+model.add(Conv2D(64, (3, 3), activation='relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(128, (3, 3), activation='relu'))
+model.add(MaxPooling2D((2, 2)))
+model.add(Flatten())
+model.add(Dense(128, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(train_generator.num_classes, activation='softmax'))
+model.compile(optimizer="adam",
+             loss="categorical_crossentropy",
+             metrics=["accuracy"])
+model.summary()
+epochs=5
+histoy = model.fit(train_generator, epochs=epochs)
+plt.plot(histoy.history['accuracy'],label='ket qua')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train'], loc='upper left')
+plt.show()
+from keras.utils import load_img
+import numpy as np
+import matplotlib.pyplot as plt
+path = "/content/OIP (1).webp"
+img = load_img(path, target_size=(280, 280))
+plt.imshow(img)
+img = np.array(img)
+img = img / 255.0
+img = np.expand_dims(img, axis=0)
+predictions_array = model.predict(img)
+prediction = np.argmax(predictions_array)
+predicted_prob = predictions_array[0][prediction]
+class_labels = {v:k for k,v in train_generator.class_indices.items()}
+person_name = class_labels[prediction]
+print(f"Đây là {person_name}")
+print(f"Độ tin cậy: {predicted_prob * 100:.2f}%")
